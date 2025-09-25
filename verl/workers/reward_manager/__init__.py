@@ -11,12 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from .registry import get_reward_manager_cls, register  # noqa: I001
 from .batch import BatchRewardManager
 from .dapo import DAPORewardManager
 from .naive import NaiveRewardManager
 from .prime import PrimeRewardManager
+from .new_prime import NewPrimeRewardManager
+
 
 # Note(haibin.lin): no need to include all reward managers here in case of complicated dependencies
 __all__ = [
@@ -24,6 +25,7 @@ __all__ = [
     "DAPORewardManager",
     "NaiveRewardManager",
     "PrimeRewardManager",
+    "NewPrimeRewardManager",
     "register",
     "get_reward_manager_cls",
 ]

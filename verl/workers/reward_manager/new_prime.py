@@ -26,6 +26,9 @@ from transformers import PreTrainedTokenizer
 
 from verl import DataProto
 from verl.utils.reward_score import default_compute_score
+from verl.workers.reward_manager import register
+from verl.workers.reward_manager.abstract import AbstractRewardManager
+
 
 
 # Set multiprocessing start method to 'spawn' for safety in distributed environments
@@ -114,7 +117,8 @@ def run_reward_scoring(evaluation_func, completions, references, tasks, extra_in
             loop.close()
 
 
-class NewPrimeRewardManager:
+@register("new_prime")
+class NewPrimeRewardManager(AbstractRewardManager):
     """
     Improved Reward Manager for https://github.com/PRIME-RL/PRIME
     Enhancements: ThreadPoolExecutor for API calls, rate limiting, caching, robust timeouts, Ray compatibility.
