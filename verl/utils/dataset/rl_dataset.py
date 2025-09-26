@@ -16,6 +16,8 @@
 
 import copy
 import logging
+import multiprocessing
+import concurrent.futures
 import os
 import re
 from collections import defaultdict
@@ -26,6 +28,8 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, ListConfig
 from torch.utils.data import Dataset
+from datasets import Dataset as HFDataset
+from tqdm import tqdm
 from transformers import PreTrainedTokenizer, ProcessorMixin
 
 import verl.utils.torch_functional as verl_F
@@ -179,13 +183,51 @@ class RLHFDataset(Dataset):
                         )
                     )
 
-            dataframe = dataframe.filter(
-                lambda doc: doc2len(doc) <= self.max_prompt_length,
-                num_proc=self.num_workers,
-                desc=f"Filtering prompts longer than {self.max_prompt_length} tokens",
-            )
+            def is_not_too_long(doc) -> bool:
+                return doc2len(doc) <= self.max_prompt_length
+
+            filtered_samples = {}
+            with tqdm(total=len(dataframe), mininterval=15,
+                      desc=f"Filtering prompts longer than {self.max_prompt_length} tokens") as pbar:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+                    futures = {
+                        executor.submit(is_not_too_long, line): idx
+                        for idx, line in enumerate(dataframe)
+                    }
+
+                    for future in concurrent.futures.as_completed(futures):
+                        result = future.result()
+                        idx = futures[future]
+                        sample = dataframe[idx]
+
+                        # order both the idx and sample
+                        if result:
+                            filtered_samples[idx] = sample
+
+                        pbar.update(1)
+
+            # reconstruct dataframe with sample order preserved
+            filtered_samples = [filtered_samples[idx] for idx in sorted(list(filtered_samples.keys()))]
+            dataframe = HFDataset.from_list(filtered_samples)
+
+            # # Check if we're in a daemon process (multiprocessing worker)
+            # # If so, disable multiprocessing to avoid "daemonic processes are not allowed to have children" error
+            # current_process = multiprocessing.current_process()
+            # is_daemon = getattr(current_process, "daemon", False)
+            # num_proc = 1 if is_daemon else self.num_workers
+            # print(f"Process: {current_process.name}, Daemon: {current_process.daemon}")
+            # print(f"is_daemon: {is_daemon}, num_proc: {num_proc}")
+
+            # with tqdm(total=len(dataframe)) as pbar:
+            #     with concurrent.futures.ThreadPoolExecutor(max_workers=args.max_num_workers) as executor:
+            # dataframe = dataframe.filter(
+            #     lambda doc: doc2len(doc) <= self.max_prompt_length,
+            #     num_proc=num_proc,
+            #     desc=f"Filtering prompts longer than {self.max_prompt_length} tokens",
+            # )
 
             print(f"filter dataset len: {len(dataframe)}")
+
         return dataframe
 
     def resume_dataset_state(self):
@@ -363,3 +405,13 @@ class RLHFDataset(Dataset):
             return state
 
         return self.__dict__.copy()
+
+    def __setstate__(self, state):
+        """Restore dataset state, reconstructing dataframe when serialize_dataset=False."""
+        self.__dict__.update(state)
+
+        # If dataframe was not serialized, reconstruct it
+        if not hasattr(self, "dataframe") and hasattr(self, "original_data_files"):
+            # print(f"__setstate__ called: reconstructing dataframe")
+            self._download(use_origin_parquet=True)
+            self._read_files_and_tokenize()
