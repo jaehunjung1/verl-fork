@@ -36,7 +36,7 @@ if mp.get_start_method(allow_none=True) is None:
     mp.set_start_method('spawn')
 
 
-async def single_compute_score(evaluation_func, completion, reference, task, task_extra_info, executor, timeout=90.0):
+async def single_compute_score(evaluation_func, completion, reference, task, task_extra_info, executor, timeout=300.0):
     loop = asyncio.get_running_loop()
     # logging.info(f"Starting task for completion: {completion[:50]}...")
     try:
@@ -48,10 +48,10 @@ async def single_compute_score(evaluation_func, completion, reference, task, tas
         # logging.info(f"Task completed for completion: {completion[:50]}")
         return result
     except asyncio.TimeoutError:
-        print(f"[Timeout] Task timed out: {completion[:50]}")
+        print(f"[Timeout] Task timed out: {task_extra_info}")
         return None
     except Exception as e:
-        print(f"[Error] Task failed: {e}, completion: {completion[:50]}")
+        print(f"[Error] Task failed: {e}, completion: {task_extra_info}")
         return None
 
 
@@ -66,7 +66,7 @@ async def parallel_compute_score_async(evaluation_func, completions, references,
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             try:
                 tasks_async = [
-                    single_compute_score(evaluation_func, c, r, t, ei, executor, timeout=90.0)
+                    single_compute_score(evaluation_func, c, r, t, ei, executor, timeout=300.0)
                     for c, r, t, ei in zip(completions, references, tasks, extra_info)
                 ]
                 # logging.info(f"Submitted {len(tasks_async)} async tasks")
