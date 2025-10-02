@@ -344,12 +344,16 @@ class DataParallelPPOActor(BasePPOActor):
         log_probs_lst = []
         entropy_lst = []
         for micro_batch in micro_batches:
+            print(f"actor.compute_log_prob from device {get_device_id()}")
             micro_batch = micro_batch.to(get_device_id())
+            print(f"actor.compute_log_prob - batch moved from device {get_device_id()}")
             model_inputs = {**micro_batch.batch, **micro_batch.non_tensor_batch}
             with torch.no_grad():
                 entropy, log_probs = self._forward_micro_batch(
                     model_inputs, temperature=temperature, calculate_entropy=calculate_entropy
                 )
+            print(f"actor.compute_log_prob - forward_micro_batch done from device {get_device_id()}")
+
             log_probs_lst.append(log_probs)
             if calculate_entropy:
                 entropy_lst.append(entropy)
