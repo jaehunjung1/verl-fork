@@ -201,7 +201,7 @@ class RayDAPOTrainer(RayPPOTrainer):
                             )
                             metrics.update(
                                 kl_metrics
-                            )  # TODO: This will be cleared if we use multiple genenration batches
+                            )  # TODO: This will be cleared if we use multiple generation batches
                         else:
                             new_batch.batch["token_level_rewards"] = new_batch.batch["token_level_scores"]
 
@@ -284,9 +284,7 @@ class RayDAPOTrainer(RayPPOTrainer):
 
                     # recompute old_log_probs
                     with marked_timer("old_log_prob", timing_raw, "blue"):
-                        print("moving on to compute_log_prob")
                         old_log_prob = self.actor_rollout_wg.compute_log_prob(batch)
-                        print("moved out of compute_log_prob")
                         entropys = old_log_prob.batch["entropys"]
                         response_masks = batch.batch["response_mask"]
                         loss_agg_mode = self.config.actor_rollout_ref.actor.loss_agg_mode
@@ -296,15 +294,11 @@ class RayDAPOTrainer(RayPPOTrainer):
                         old_log_prob.batch.pop("entropys")
                         batch = batch.union(old_log_prob)
 
-                    print("computing old log prob done")
-
                     if self.use_reference_policy:
                         # compute reference log_prob
                         with marked_timer("ref", timing_raw, "olive"):
                             ref_log_prob = self.ref_policy_wg.compute_ref_log_prob(batch)
                             batch = batch.union(ref_log_prob)
-
-                    print("compute_ref_log_prob done")
 
                     # compute values
                     if self.use_critic:
