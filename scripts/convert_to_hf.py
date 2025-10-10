@@ -6,7 +6,8 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
     checkpoint_dirs = [
-        Path("/lustre/fs1/portfolios/nvr/projects/nvr_lacr_llm/users/jaehunj/verl/verl-projects/vlm_rl/checkpoints/mixture1_2-kl0.001-ent0/global_step_100"),
+        # Path("/lustre/fs1/portfolios/nvr/projects/nvr_lacr_llm/users/jaehunj/verl/verl-projects/vlm_rl/checkpoints/mixture1_2-kl0.001-ent0/global_step_100"),
+        Path("/lustre/fs1/portfolios/nvr/projects/nvr_lacr_llm/users/jaehunj/verl/verl-projects/vlm_rl/checkpoints/physreason-ugphysics-rpp-l32k/global_step_70"),
     ]
 
     for checkpoint_dir in tqdm(checkpoint_dirs):
