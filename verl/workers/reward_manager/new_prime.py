@@ -55,7 +55,7 @@ async def single_compute_score(evaluation_func, completion, reference, task, tas
         return None
 
 
-async def parallel_compute_score_async(evaluation_func, completions, references, tasks, extra_info=None, num_threads=64):
+async def parallel_compute_score_async(evaluation_func, completions, references, tasks, extra_info=None, num_threads=128):
     if extra_info is None:
         extra_info = [None] * len(tasks)
     scores = []
@@ -102,7 +102,7 @@ async def parallel_compute_score_async(evaluation_func, completions, references,
     return scores
 
 
-def run_reward_scoring(evaluation_func, completions, references, tasks, extra_info=None, num_threads=64):
+def run_reward_scoring(evaluation_func, completions, references, tasks, extra_info=None, num_threads=128):
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -138,7 +138,7 @@ class NewPrimeRewardManager(AbstractRewardManager):
         self.reward_fn_key = reward_fn_key
         # Use Ray resources if available, else default to conservative thread count
         self.num_threads = kwargs.get('num_threads',
-                                      min(64, int(ray.cluster_resources().get('CPU', mp.cpu_count()) // 2)))
+                                      min(128, int(ray.cluster_resources().get('CPU', mp.cpu_count()) // 2)))
 
     def verify(self, data):
         """
